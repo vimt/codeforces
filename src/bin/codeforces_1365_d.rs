@@ -65,10 +65,21 @@ mod tests {
 
     #[test]
     fn test() {
-        let tester = codefoces::test::Tester::new(solve);
-
-        let input: &[u8] = b"6\n1 1\n.\n1 2\nG.\n2 2\n#B\nG.\n2 3\nG.#\nB#.\n3 3\n#B.\n#..\nGG.\n2 2\n#B\nB.\n";
-        let expect = b"Yes\nYes\nNo\nNo\nYes\nYes\n";
-        tester.run_test(input, expect);
+        let testcases = vec![
+            "6\n1 1\n.\n1 2\nG.\n2 2\n#B\nG.\n2 3\nG.#\nB#.\n3 3\n#B.\n#..\nGG.\n2 2\n#B\nB.\n",
+            "Yes\nYes\nNo\nNo\nYes\nYes\n",
+        ];
+        let functions: Vec<fn(Scanner<_>, &mut _)> = vec![
+            solve
+        ];
+        for func in functions {
+            for tc in testcases.chunks(2) {
+                let input = tc[0].as_bytes();
+                let expect_output = tc[1].as_bytes();
+                let mut output = Vec::new();
+                func(Scanner::new(input), &mut output);
+                assert_eq!(output, expect_output);
+            }
+        }
     }
 }

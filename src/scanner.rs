@@ -1,27 +1,26 @@
 use std::io::prelude::*;
-use std::str::FromStr;
 
 pub struct Scanner<R> {
     reader: R,
-    buffer: Vec<String>,
+    buf_str: Vec<u8>,
+    buf_iter: std::str::SplitAsciiWhitespace<'static>,
 }
 
 impl<R: BufRead> Scanner<R> {
     pub fn new(reader: R) -> Self {
-        Self {
-            reader,
-            buffer: vec![],
-        }
+        Self { reader, buf_str: Vec::new(), buf_iter: "".split_ascii_whitespace() }
     }
-
-    pub fn token<T: FromStr>(&mut self) -> T where <T as FromStr>::Err: std::fmt::Debug {
+    pub fn next<T: std::str::FromStr>(&mut self) -> T {
         loop {
-            if let Some(token) = self.buffer.pop() {
-                return token.parse().unwrap();
+            if let Some(token) = self.buf_iter.next() {
+                return token.parse().ok().expect("Failed parse");
             }
-            let mut input = String::new();
-            self.reader.read_line(&mut input).unwrap();
-            self.buffer = input.split_whitespace().rev().map(String::from).collect();
+            unsafe { self.buf_str.set_len(0); }
+            self.reader.read_until(b'\n', &mut self.buf_str).expect("Failed read");
+            self.buf_iter = unsafe {
+                let slice = std::str::from_utf8_unchecked(&self.buf_str);
+                std::mem::transmute(slice.split_ascii_whitespace())
+            }
         }
     }
 }
