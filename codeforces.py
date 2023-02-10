@@ -10,28 +10,33 @@ session = requests.session()
 
 
 class Problem(object):
-    def __init__(self, name, samples):
+    def __init__(self, url, name, samples):
+        self.url = url
         self.name = name
         self.samples = samples
 
 
 template = """//! %s
+//! %s
 
-use std::io::{stdin, stdout};
-use std::io::prelude::*;
-use codefoces::scanner::Scanner;
+use codeforces::scanner::Scanner;
 
+mod my {
+    use std::io::{BufRead, Write};
+    use super::*;
 
-fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
-    macro_rules! puts {($($format:tt)*) => (let _ = writeln!(out,$($format)*););}
-    let t: usize = scanner.token();
-    for _ in 0..t {
-        puts!("Ok");
+    pub fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
+        macro_rules! puts {($($format:tt)*) => (let _ = writeln!(out,$($format)*););}
+        let t: usize = scanner.next();
+        'o: for _ in 0..t {
+            puts!("Ok");
+        }
     }
 }
 
 fn main() {
-    solve(Scanner::new(stdin().lock()), &mut stdout().lock())
+    use std::io::{stdin, stdout};
+    my::solve(Scanner::new(stdin().lock()), &mut stdout().lock())
 }
 
 #[cfg(test)]
@@ -44,7 +49,7 @@ mod tests {
             %s
         ];
         let functions: Vec<fn(Scanner<_>, &mut _)> = vec![
-            solve
+            my::solve
         ];
         for func in functions {
             for tc in testcases.chunks(2) {
@@ -69,7 +74,7 @@ def generate_file(filename, problem: Problem):
         lines.append(f'"{format_sample(ip)}",')
         lines.append(f'"{format_sample(op)}",')
     with open(filename, 'w', encoding="utf-8") as f:
-        content = template % (problem.name, '\n'.join(lines))
+        content = template % (problem.name, problem.url, '\n'.join(lines))
         f.write(content)
 
 
@@ -83,7 +88,7 @@ class Atcoder(object):
         name = html.xpath("//span[@class='h2']/text()")[0].strip()
         sample_input = html.xpath("//h3[contains(text(), 'Sample Input')]/../pre/text()")
         sample_output = [i.text or '' for i in html.xpath("//h3[contains(text(), 'Sample Output')]/../pre")]
-        return Problem(name, list(zip(sample_input, sample_output)))
+        return Problem(url, name, list(zip(sample_input, sample_output)))
 
     def contest_gid_list(self, contest):
         url = f'{self.contest_url}{contest}'
@@ -118,7 +123,7 @@ class Codeforces(object):
     problemset_url = 'https://codeforces.com/problemset/problem/'
 
     def get_problem(self, contest, gid):
-        url = f"{self.problemset_url}{contest}/{gid}"
+        url = f"{self.contest_url}{contest}/problem/{gid}"
         response = session.get(url)
         html = etree.HTML(response.text)
         if response.text.count('class="test-example-line'):
@@ -127,7 +132,7 @@ class Codeforces(object):
             sample_input = [i.lstrip() for i in html.xpath("//div[@class='input']/pre/text()")]
         name = html.xpath("//div[@class='title']/text()")[0].strip()
         sample_output = [i.lstrip() for i in html.xpath("//div[@class='output']/pre/text()")]
-        return Problem(name, list(zip(sample_input, sample_output)))
+        return Problem(url, name, list(zip(sample_input, sample_output)))
 
     def contest_gid_list(self, contest):
         url = f"https://codeforces.com/contest/{contest}"

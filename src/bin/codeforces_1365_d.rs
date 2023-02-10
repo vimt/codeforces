@@ -1,18 +1,18 @@
 use std::collections::VecDeque;
 use std::io::{BufReader, stdin, stdout};
 use std::io::prelude::*;
-use codefoces::scanner::Scanner;
+use codeforces::scanner::Scanner;
 
 fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
     static DIR: [(i32, i32); 4] = [(-1, 0), (0, 1), (1, 0), (0, -1)];
-    let t: i64 = scanner.token();
+    let t: i64 = scanner.next();
     for _ in 0..t {
-        let m: usize = scanner.token();
-        let n: usize = scanner.token();
+        let m: usize = scanner.next();
+        let n: usize = scanner.next();
         let mut grid = vec![vec![b'.'; n]; m];
         let mut good_num = 0;
         for i in 0..m {
-            grid[i] = scanner.token::<String>().into_bytes();
+            grid[i] = scanner.next::<String>().into_bytes();
             for j in 0..n {
                 if grid[i][j] == b'G' { good_num += 1; }
             }

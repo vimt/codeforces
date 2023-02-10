@@ -2,7 +2,7 @@
 
 use std::io::{BufReader, stdin, stdout};
 use std::io::prelude::*;
-use codefoces::scanner::Scanner;
+use codeforces::scanner::Scanner;
 
 
 pub struct UnionFind {

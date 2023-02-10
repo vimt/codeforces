@@ -1,4 +1,4 @@
-use std::io::prelude::*;
+use std::io::BufRead;
 
 pub struct Scanner<R> {
     reader: R,

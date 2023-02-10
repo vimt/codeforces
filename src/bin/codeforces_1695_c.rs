@@ -2,7 +2,7 @@
 
 use std::io::{BufReader, stdin, stdout};
 use std::io::prelude::*;
-use codefoces::scanner::Scanner;
+use codeforces::scanner::Scanner;
 
 fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
     let t: usize = scanner.token();
