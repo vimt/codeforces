@@ -146,8 +146,9 @@ mod my {
 }
 
 fn main() {
-    use std::io::{stdin, stdout};
-    my::solve(Scanner::new(stdin().lock()), &mut stdout().lock())
+    use codeforces::raw;
+    let (stdin, mut stdout) = raw::in_out();
+    num1::solve(Scanner::new(stdin), &mut stdout)
 }
 
 #[cfg(test)]

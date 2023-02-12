@@ -35,8 +35,9 @@ mod my {
 }
 
 fn main() {
-    use std::io::{stdin, stdout};
-    my::solve(Scanner::new(stdin().lock()), &mut stdout().lock())
+    use codeforces::raw;
+    let (stdin, mut stdout) = raw::in_out();
+    num1::solve(Scanner::new(stdin), &mut stdout)
 }
 
 #[cfg(test)]
@@ -49,7 +50,7 @@ mod tests {
             %s
         ];
         let functions: Vec<fn(Scanner<_>, &mut _)> = vec![
-            my::solve
+            my::solve,
         ];
         for func in functions {
             for tc in testcases.chunks(2) {
