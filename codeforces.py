@@ -28,8 +28,13 @@ mod my {
     pub fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
         macro_rules! puts {($($format:tt)*) => (let _ = writeln!(out,$($format)*););}
         let t: usize = scanner.next();
-        for _ in 0..t {
+        let mut go = || {
+            let len: usize = scanner.next();
+            let a: Vec<i32> = (0..len).map(|_|scanner.next()).collect();
             puts!("Ok");
+        };
+        for _ in 0..t {
+            go();
         }
     }
 }
@@ -54,7 +59,6 @@ mod tests {
         ];
         for func in functions {
             for tc in testcases.chunks(2) {
-                input! {Scanner::new(tc[0].as_bytes()), a: [i32]}
                 let mut output = Vec::new();
                 func(Scanner::new(tc[0].as_bytes()), &mut output);
                 assert_eq!(String::from_utf8(output).unwrap(), tc[1], "input: {}", tc[0]);
@@ -112,7 +116,7 @@ class Atcoder(object):
             filepath = f"src/bin/{filename}.rs"
             if os.path.exists(filepath):
                 print(f"{filepath} exist!")
-                return
+                continue
             samples = self.get_problem(contest, gid)
             generate_file(filepath, samples)
             print(filepath)
@@ -127,12 +131,16 @@ class Codeforces(object):
         url = f"{self.contest_url}{contest}/problem/{gid}"
         response = session.get(url)
         html = etree.HTML(response.text)
+        sample_len = len(html.xpath("//div[@class='input']/pre"))
         if response.text.count('class="test-example-line'):
             sample_input = ['\n'.join(html.xpath("//div[@class='input']/pre/div/text()"))]
         else:
-            sample_input = [i.lstrip() for i in html.xpath("//div[@class='input']/pre/text()")]
+
+            sample_input = ['\n'.join(html.xpath(f"//div[@class='input'][{i}]/pre/text()")).lstrip() + '\n' for i in
+                            range(1, sample_len + 1)]
         name = html.xpath("//div[@class='title']/text()")[0].strip()
-        sample_output = [i.lstrip() for i in html.xpath("//div[@class='output']/pre/text()")]
+        sample_output = ['\n'.join(html.xpath(f"//div[@class='output'][{i}]/pre/text()")).lstrip() + '\n' for i in
+                         range(1, sample_len + 1)]
         return Problem(url, name, list(zip(sample_input, sample_output)))
 
     def contest_gid_list(self, contest):
@@ -161,7 +169,7 @@ class Codeforces(object):
             filepath = f"src/bin/{filename}.rs"
             if os.path.exists(filepath):
                 print(f"{filepath} exist!")
-                return
+                continue
             samples = self.get_problem(contest, gid)
             generate_file(filepath, samples)
             print(filepath)
