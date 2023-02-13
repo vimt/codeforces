@@ -28,7 +28,7 @@ mod my {
     pub fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
         macro_rules! puts {($($format:tt)*) => (let _ = writeln!(out,$($format)*););}
         let t: usize = scanner.next();
-        'o: for _ in 0..t {
+        for _ in 0..t {
             puts!("Ok");
         }
     }
@@ -37,7 +37,7 @@ mod my {
 fn main() {
     use codeforces::raw;
     let (stdin, mut stdout) = raw::in_out();
-    num1::solve(Scanner::new(stdin), &mut stdout)
+    my::solve(Scanner::new(stdin), &mut stdout)
 }
 
 #[cfg(test)]
@@ -75,7 +75,7 @@ def generate_file(filename, problem: Problem):
         lines.append(f'"{format_sample(ip)}",')
         lines.append(f'"{format_sample(op)}",')
     with open(filename, 'w', encoding="utf-8") as f:
-        content = template % (problem.name, problem.url, '\n'.join(lines))
+        content = template % (problem.url, problem.name, '\n'.join(lines))
         f.write(content)
 
 
