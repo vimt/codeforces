@@ -1,23 +1,27 @@
 import os.path
 import os.path
 import subprocess
+from typing import List
 
 import click
 import requests
 from lxml import etree
 
 session = requests.session()
+ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'
+session.headers['User-Agent'] = ua
 
 
 class Problem(object):
-    def __init__(self, url, name, samples):
+    def __init__(self, url, info: List[str], name, samples):
         self.url = url
+        self.info = info
         self.name = name
         self.samples = samples
 
 
 template = """//! %s
-//! %s
+%s
 
 use codeforces::scanner::Scanner;
 
@@ -25,7 +29,7 @@ mod my {
     use std::io::{BufRead, Write};
     use super::*;
 
-    pub fn solve<R: BufRead, W: Write>(mut scanner: Scanner<R>, out: &mut W) {
+    pub fn solve<R: BufRead, W: Write>(scanner: &mut Scanner<R>, out: &mut W) {
         macro_rules! puts {($($format:tt)*) => (let _ = writeln!(out,$($format)*););}
         let t: usize = scanner.next();
         let mut go = || {
@@ -42,7 +46,7 @@ mod my {
 fn main() {
     use codeforces::raw;
     let (stdin, mut stdout) = raw::in_out();
-    my::solve(Scanner::new(stdin), &mut stdout)
+    my::solve(&mut Scanner::new(stdin), &mut stdout)
 }
 
 #[cfg(test)]
@@ -54,13 +58,13 @@ mod tests {
         let testcases = vec![
             %s
         ];
-        let functions: Vec<fn(Scanner<_>, &mut _)> = vec![
+        let functions: Vec<fn(&mut Scanner<_>, &mut _)> = vec![
             my::solve,
         ];
         for func in functions {
             for tc in testcases.chunks(2) {
                 let mut output = Vec::new();
-                func(Scanner::new(tc[0].as_bytes()), &mut output);
+                func(&mut Scanner::new(tc[0].as_bytes()), &mut output);
                 assert_eq!(String::from_utf8(output).unwrap(), tc[1], "input: {}", tc[0]);
             }
         }
@@ -79,7 +83,7 @@ def generate_file(filename, problem: Problem):
         lines.append(f'"{format_sample(ip)}",')
         lines.append(f'"{format_sample(op)}",')
     with open(filename, 'w', encoding="utf-8") as f:
-        content = template % (problem.url, problem.name, '\n'.join(lines))
+        content = template % (problem.name, '\n'.join(f'//! {i}' for i in problem.info), '\n'.join(lines))
         f.write(content)
 
 
@@ -93,7 +97,7 @@ class Atcoder(object):
         name = html.xpath("//span[@class='h2']/text()")[0].strip()
         sample_input = html.xpath("//h3[contains(text(), 'Sample Input')]/../pre/text()")
         sample_output = [i.text or '' for i in html.xpath("//h3[contains(text(), 'Sample Output')]/../pre")]
-        return Problem(url, name, list(zip(sample_input, sample_output)))
+        return Problem(url, [], name, list(zip(sample_input, sample_output)))
 
     def contest_gid_list(self, contest):
         url = f'{self.contest_url}{contest}'
@@ -126,6 +130,8 @@ class Atcoder(object):
 class Codeforces(object):
     contest_url = 'https://codeforces.com/contest/'
     problemset_url = 'https://codeforces.com/problemset/problem/'
+    status_url = 'https://codeforces.com/problemset/status/%s/problem/%s'
+    luogu_url = 'https://www.luogu.com.cn/problem/solution/CF%s%s'
 
     def get_problem(self, contest, gid):
         url = f"{self.contest_url}{contest}/problem/{gid}"
@@ -135,13 +141,13 @@ class Codeforces(object):
         if response.text.count('class="test-example-line'):
             sample_input = ['\n'.join(html.xpath("//div[@class='input']/pre/div/text()"))]
         else:
-
-            sample_input = ['\n'.join(html.xpath(f"//div[@class='input'][{i}]/pre/text()")).lstrip() + '\n' for i in
-                            range(1, sample_len + 1)]
+            sample_input = ['\n'.join(html.xpath(f"//div[@class='input'][{i}]/pre/text()")).strip() + '\n'
+                            for i in range(1, sample_len + 1)]
         name = html.xpath("//div[@class='title']/text()")[0].strip()
-        sample_output = ['\n'.join(html.xpath(f"//div[@class='output'][{i}]/pre/text()")).lstrip() + '\n' for i in
-                         range(1, sample_len + 1)]
-        return Problem(url, name, list(zip(sample_input, sample_output)))
+        sample_output = ['\n'.join(html.xpath(f"//div[@class='output'][{i}]/pre/text()")).strip() + '\n'
+                         for i in range(1, sample_len + 1)]
+        info = [self.status_url % (contest, gid), self.luogu_url % (contest, gid)]
+        return Problem(url, info, name, list(zip(sample_input, sample_output)))
 
     def contest_gid_list(self, contest):
         url = f"https://codeforces.com/contest/{contest}"
@@ -170,8 +176,41 @@ class Codeforces(object):
             if os.path.exists(filepath):
                 print(f"{filepath} exist!")
                 continue
-            samples = self.get_problem(contest, gid)
-            generate_file(filepath, samples)
+            problem = self.get_problem(contest, gid)
+            generate_file(filepath, problem)
+            print(filepath)
+            subprocess.run(f'git add {filepath}', shell=True)
+
+
+class LuoGu(object):
+    problem_url = f'https://www.luogu.com.cn/problem/'
+    solution_url = 'https://www.luogu.com.cn/problem/solution/'
+    record_url = 'https://www.luogu.com.cn/record/list?status=&pid=%s&page=1&orderBy=1'
+
+    def get_problem(self, pid):
+        url = self.problem_url + pid
+        response = session.get(url)
+        html = etree.HTML(response.text)
+        title = html.xpath('//h1/text()')[0]
+        sample_input = html.xpath("//h3[contains(text(), '输入样例')]/following::pre[1]/code/text()")
+        sample_output = html.xpath("//h3[contains(text(), '输出样例')]/following::pre[1]/code/text()")
+        sample_output = [i.rstrip() + '\n' for i in sample_output]
+        return Problem(url, [self.record_url % pid], title, list(zip(sample_input, sample_output)))
+
+    def handle(self, url: str):
+        problems = []
+        if url.startswith(self.problem_url):
+            pid = url.removeprefix(self.problem_url).strip()
+            assert '/' not in pid
+            problems.append(pid)
+        for pid in problems:
+            filename = f'luogu_{pid}'.lower()
+            filepath = f'src/bin/{filename}.rs'
+            if os.path.exists(filepath):
+                print(f'{filepath} exist')
+                continue
+            problem = self.get_problem(pid)
+            generate_file(filepath, problem)
             print(filepath)
             subprocess.run(f'git add {filepath}', shell=True)
 
@@ -184,6 +223,8 @@ def cli(url_list):
             Codeforces().handle(url)
         elif url.startswith('https://atcoder.jp/'):
             Atcoder().handle(url)
+        elif url.startswith('https://www.luogu.com.cn/'):
+            LuoGu().handle(url)
         else:
             raise Exception(f"unknown url {url}")
 
