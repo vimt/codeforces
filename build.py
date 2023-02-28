@@ -51,7 +51,8 @@ def analyse(filename):
 @click.argument("filename")
 def main(filename):
     use, functions, mods, other, head = analyse(filename)
-
+    if 'main' not in functions:
+        return
     main_func = functions.pop('main')
     solve_mod_name = main_func.split('\n')[-2].partition('::solve')[0].strip()
     solve_mod = mods.pop(solve_mod_name)
@@ -62,7 +63,8 @@ def main(filename):
             use.append(line)
     solve_lines = [i for i in solve_lines if not i.startswith('use ')]
 
-    used_mods = set([i.removeprefix("use codeforces::").partition("::")[0] for i in use if i.startswith('use codeforces::')])
+    used_mods = set(
+        [i.removeprefix("use codeforces::").partition("::")[0] for i in use if i.startswith('use codeforces::')])
     used_mods.add('raw')
     use_content = '\n'.join(use)
     use_content = use_content.replace("use codeforces::", "use crate::")

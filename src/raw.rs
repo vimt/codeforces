@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, stdin, stdout, Write};
 
-
 #[cfg(windows)]
 pub fn in_out() -> (impl BufRead, impl Write) {
     use std::os::windows::prelude::{AsRawHandle, FromRawHandle};
