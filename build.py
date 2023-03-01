@@ -34,7 +34,8 @@ def analyse(filename):
         elif line.startswith('fn '):
             fn_name = line.removeprefix('fn ').strip().partition('(')[0].partition('<')[0]
             i, blocks = read_block(i)
-            functions[fn_name] = '\n'.join(blocks)
+            if fn_name not in functions:
+                functions[fn_name] = '\n'.join(blocks)
         elif line.startswith('mod '):
             mod_name = line.removeprefix('mod ').strip().partition(' ')[0]
             i, blocks = read_block(i)

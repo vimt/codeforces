@@ -78,7 +78,7 @@ impl Display for Testcase<'_> {
 
 #[macro_export]
 macro_rules! solves {
-    ($($r:tt)*) => {
-        vec![$((stringify!($r), $r::solve))*]
+    ($($r:tt),*) => {
+        vec![$((stringify!($r), $r::solve)),*]
     };
 }
