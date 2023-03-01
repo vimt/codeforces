@@ -43,32 +43,19 @@ mod my {
     }
 }
 
+#[cfg(not(debug))]
 fn main() {
     use codeforces::raw;
     let (stdin, mut stdout) = raw::in_out();
     my::solve(&mut Scanner::new(stdin), &mut stdout)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test() {
-        let testcases = vec![
-            %s
-        ];
-        let functions: Vec<fn(&mut Scanner<_>, &mut _)> = vec![
-            my::solve,
-        ];
-        for func in functions {
-            for tc in testcases.chunks(2) {
-                let mut output = Vec::new();
-                func(&mut Scanner::new(tc[0].as_bytes()), &mut output);
-                assert_eq!(String::from_utf8(output).unwrap(), tc[1], "input: {}", tc[0]);
-            }
-        }
-    }
+#[cfg(debug)]
+fn main() {
+    use codeforces::solves;
+    use codeforces::tester::Tester;
+    let t = Tester::new(solves!(my));
+    %s
 }
 """
 
@@ -80,8 +67,8 @@ def generate_file(filename, problem: Problem):
         return text.replace('\r', '').replace('\n', r'\n')
 
     for ip, op in problem.samples:
-        lines.append(f'"{format_sample(ip)}",')
-        lines.append(f'"{format_sample(op)}",')
+        lines.append(f'"t.test({format_sample(ip)}",')
+        lines.append(f'"{format_sample(op)}");')
     with open(filename, 'w', encoding="utf-8") as f:
         content = template % (problem.name, '\n'.join(f'//! {i}' for i in problem.info), '\n'.join(lines))
         f.write(content)

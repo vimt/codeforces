@@ -59,60 +59,47 @@ mod my {
     }
 }
 
+#[cfg(not(debug))]
 fn main() {
     use codeforces::raw;
     let (stdin, mut stdout) = raw::in_out();
     my::solve(&mut Scanner::new(stdin), &mut stdout)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test() {
-        let testcases = vec![
-            "4\n",
-            "",
-            "2\n",
-            "4\nNNYY\nNNYY\nYYNN\nYYNN\n",
-            "9\n",
-            "8\nNNYYYNNN\nNNNNNYYY\nYNNNNYYY\nYNNNNYYY\nYNNNNYYY\nNYYYYNNN\nNYYYYNNN\nNYYYYNNN\n",
-            "1\n",
-            "2\nNY\nYN\n",
-        ];
-        let functions: Vec<fn(&mut Scanner<_>, &mut _)> = vec![
-            my::solve,
-        ];
-        for func in functions {
-            for tc in testcases.chunks(2) {
-                let mut output = Vec::new();
-                func(&mut Scanner::new(tc[0].as_bytes()), &mut output);
-                let mut sc = Scanner::new(tc[0].as_bytes());
-                let k: usize = sc.next();
-                sc = Scanner::new(&output);
-                let n: usize = sc.next();
-                let mut grid = vec![];
-                for _ in 0..n {
-                    grid.push(sc.next::<String>().into_bytes());
-                }
-                let mut q = vec![(0, 0)];
-                while !q.is_empty() {
-                    let mut nq = vec![];
-                    for (u, fa) in q {
-                        for v in 0..n {
-                            if v != fa && grid[u][v] == b'Y' {
-                                nq.push((v, u));
-                            }
-                        }
+#[cfg(debug)]
+fn main() {
+    use codeforces::{solves, input};
+    use codeforces::tester::{Tester, Testcase};
+    fn judge(mut tc: Testcase) {
+        input!(tc.input_scanner(), k: usize);
+        let sc = tc.output_scanner();
+        let n: usize = sc.next();
+        let mut grid = vec![];
+        for _ in 0..n {
+            grid.push(sc.next::<String>().into_bytes());
+        }
+        let mut q = vec![(0, 0)];
+        while !q.is_empty() {
+            let mut nq = vec![];
+            for (u, fa) in q {
+                for v in 0..n {
+                    if v != fa && grid[u][v] == b'Y' {
+                        nq.push((v, u));
                     }
-                    if nq.iter().any(|x| x.0 == 1) {
-                        assert_eq!(nq.iter().filter(|x| x.0 == 1).count(), k);
-                        break;
-                    }
-                    q = nq;
                 }
             }
+            if nq.iter().any(|x| x.0 == 1) {
+                tc.assert_eq(nq.iter().filter(|x| x.0 == 1).count(), k);
+                break;
+            }
+            q = nq;
         }
     }
+    let t = Tester::with_judge(solves!(my), judge);
+    t.test("2\n",
+           "4\nNNYY\nNNYY\nYYNN\nYYNN\n");
+    t.test("9\n",
+           "8\nNNYYYNNN\nNNNNNYYY\nYNNNNYYY\nYNNNNYYY\nYNNNNYYY\nNYYYYNNN\nNYYYYNNN\nNYYYYNNN\n");
+    t.test("1\n",
+        "2\nNY\nYN\n");
 }
