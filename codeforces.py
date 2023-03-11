@@ -10,6 +10,10 @@ from lxml import etree
 session = requests.session()
 ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36'
 session.headers['User-Agent'] = ua
+if os.path.exists('cookie'):
+    with open('cookie', 'r', encoding='utf-8') as f:
+        cookie = f.read()
+        session.headers['cookie'] = cookie.strip()
 
 
 class Problem(object):
@@ -67,7 +71,7 @@ def generate_file(filename, problem: Problem):
         return text.replace('\r', '').replace('\n', r'\n')
 
     for ip, op in problem.samples:
-        lines.append(f'"t.test({format_sample(ip)}",')
+        lines.append(f't.test("{format_sample(ip)}",')
         lines.append(f'"{format_sample(op)}");')
     with open(filename, 'w', encoding="utf-8") as f:
         content = template % (problem.name, '\n'.join(f'//! {i}' for i in problem.info), '\n'.join(lines))
@@ -117,7 +121,7 @@ class Atcoder(object):
 class Codeforces(object):
     contest_url = 'https://codeforces.com/contest/'
     problemset_url = 'https://codeforces.com/problemset/problem/'
-    status_url = 'https://codeforces.com/problemset/status/%s/problem/%s'
+    status_url = 'https://codeforces.com/problemset/status/%s/problem/%s?order=BY_CONSUMED_TIME_ASC'
     luogu_url = 'https://www.luogu.com.cn/problem/solution/CF%s%s'
 
     def get_problem(self, contest, gid):
@@ -202,6 +206,50 @@ class LuoGu(object):
             subprocess.run(f'git add {filepath}', shell=True)
 
 
+class Nowcoder(object):
+    contest_url = 'https://ac.nowcoder.com/acm/contest/'
+    problem_url = 'https://ac.nowcoder.com/acm/problem/'
+
+    def get_problem(self, url):
+        response = session.get(url)
+        html = etree.HTML(response.text)
+        title = html.xpath("//div[@class='question-title']/text()")[1].strip()
+        sample_input = html.xpath("//h2[text()='输入']/..//pre/text()")
+        sample_output = html.xpath("//h2[text()='输出']/..//pre/text()")
+        return Problem(url, [url], title, list(zip(sample_input, sample_output)))
+
+    def contest_gid_list(self, contest):
+        url = f"https://ac.nowcoder.com/acm/contest/problem-list?id={contest}"
+        response = session.get(url)
+        data = response.json()['data']['data']
+        return [i['index'] for i in data]
+
+    def handle(self, url: str):
+        problems = []
+        if url.startswith(self.contest_url):
+            contest, _, gid = url.removeprefix(self.contest_url).partition('/')
+            if gid == '':
+                for gid in self.contest_gid_list(contest):
+                    problems.append((f'{contest}_{gid}', self.contest_url + f'{contest}/{gid}'))
+            else:
+                problems.append((f'{contest}_{gid}', self.contest_url + f'{contest}/{gid}'))
+        elif url.startswith(self.problem_url):
+            gid = url.removeprefix(self.problem_url)
+            problems.append((gid, url))
+        else:
+            raise Exception(f"unknown codeforces url {url}")
+        for name, url in problems:
+            filename = f'nowcoder_{name}'.lower()
+            filepath = f"src/bin/{filename}.rs"
+            if os.path.exists(filepath):
+                print(f"{filepath} exist!")
+                continue
+            problem = self.get_problem(url)
+            generate_file(filepath, problem)
+            print(filepath)
+            subprocess.run(f'git add {filepath}', shell=True)
+
+
 @click.command()
 @click.argument("url_list", nargs=-1)
 def cli(url_list):
@@ -212,6 +260,8 @@ def cli(url_list):
             Atcoder().handle(url)
         elif url.startswith('https://www.luogu.com.cn/'):
             LuoGu().handle(url)
+        elif url.startswith('https://ac.nowcoder.com/'):
+            Nowcoder().handle(url)
         else:
             raise Exception(f"unknown url {url}")
 

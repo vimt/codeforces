@@ -7,16 +7,16 @@ use codeforces::scanner::Scanner;
 mod my {
     use std::collections::VecDeque;
     use std::io::{BufRead, Write};
-    use codeforces::adjacency::Adjacency;
+    use codeforces::graph::Graph;
     use super::*;
 
     pub fn solve<R: BufRead, W: Write>(scanner: &mut Scanner<R>, out: &mut W) {
         let len: usize = scanner.next();
         let a: Vec<usize> = (0..len).map(|_| scanner.next()).collect();
-        let mut g = Adjacency::new(len, len * 2);
+        let mut g: Graph<()> = Graph::new(len, len * 2);
         for (i, &num) in a.iter().enumerate() {
-            if i >= num { g.add(i - num, i); }
-            if i + num < len { g.add(i + num, i); }
+            if i >= num { g.add(i - num, i, ()); }
+            if i + num < len { g.add(i + num, i, ()); }
         }
         let mut step = vec![[i32::MAX, i32::MAX]; len];
         let mut q = VecDeque::with_capacity(3 * len);
@@ -26,7 +26,7 @@ mod my {
         }
         while !q.is_empty() {
             let (i, o, level) = q.pop_front().unwrap();
-            for j in g.neigh(i) {
+            for (j, _) in g.neigh(i) {
                 if level + 1 < step[j][o] {
                     step[j][o] = level + 1;
                     q.push_back((j, o, level + 1));
