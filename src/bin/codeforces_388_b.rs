@@ -95,7 +95,7 @@ fn main() {
             q = nq;
         }
     }
-    let t = Tester::with_judge(solves!(my), judge);
+    let t = Tester::with_judge(judge, solves!(my));
     t.test("2\n",
            "4\nNNYY\nNNYY\nYYNN\nYYNN\n");
     t.test("9\n",

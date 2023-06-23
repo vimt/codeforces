@@ -14,10 +14,10 @@ impl Tester {
         fn judge(tc: Testcase) {
             tc.assert_eq(tc.expect, tc.output)
         }
-        return Self::with_judge(functions, judge);
+        return Self::with_judge(judge, functions);
     }
 
-    pub fn with_judge(functions: Vec<(&'static str, SolveFunc)>, judge: JudgeFunc) -> Self {
+    pub fn with_judge(judge: JudgeFunc, functions: Vec<(&'static str, SolveFunc)>) -> Self {
         return Self {
             judge,
             functions,
@@ -48,6 +48,9 @@ pub struct Testcase<'a> {
 impl<'a> Testcase<'a> {
     pub fn assert_eq<T: Eq + Debug>(&self, a: T, b: T) {
         assert_eq!(a, b, "{}", self)
+    }
+    pub fn assert_ne<T: Eq + Debug>(&self, a: T, b: T) {
+        assert_ne!(a, b, "{}", self)
     }
 
     pub fn input_scanner(&mut self) -> &mut Scanner<&'a [u8]> {
